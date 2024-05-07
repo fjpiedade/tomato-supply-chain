@@ -1,0 +1,158 @@
+module TomatoSupplyChain where
+
+import Daml.Script
+import DA.Date
+-- import DA.Time
+
+type TomatoBatchCID = ContractId TomatoBatch -- Asset
+-- Definição do contrato para representar um lote de tomates
+template TomatoBatch
+  with
+    batchId: Text
+    farmer: Party
+    distributor: Optional Party
+    retailer: Optional Party
+    consumer: Optional Party
+    variety: Text
+    quantity: Int
+    weight: Decimal
+    plantingDate: Date
+    harvestDate: Date
+    harvestLocation: Text
+    currentLocation: Text
+    certification: Text
+    temperature: Decimal
+    humidity: Decimal
+    hasFertilizer: Bool
+    status: Text
+  where
+    signatory farmer
+    observer distributor, retailer, consumer
+    -- Create choice with validation condition
+    choice Create : ContractId TomatoBatch
+      with
+        party: Party
+      controller farmer
+      do 
+        -- Validate plantingDate and harvestDate
+        -- currentTime <- getTime
+        -- let nowDate = toDateUTC currentTime
+        -- assertMsg "Planting date cannot be in the future" (plantingDate <= nowDate)
+        -- assertMsg "Harvest date cannot be in the future" (harvestDate <= nowDate)
+        assertMsg "Harvest date must be after planting date" (plantingDate < harvestDate)
+        let threeMonthsFromPlanting = addDays plantingDate 90 -- Adding 90 days to plantingDate
+        assertMsg "Difference between planting and harvest dates must be more than 3 months" (harvestDate > threeMonthsFromPlanting) 
+        create this with status = "Packed"
+
+    choice ShipToDistributor : ContractId TomatoBatch
+      with
+        party: Party
+      controller farmer
+      do create this with distributor = Some party, status = "ReceivedByDistributor"
+
+    choice ReceiveByDistributor : ContractId TomatoBatch
+      with
+        party: Party
+      controller distributor
+      do create this with retailer = Some party, status = "InTransit"
+
+    choice LocationUpdate : ContractId TomatoBatch
+      with
+        party: Party
+      controller distributor
+      do create this with distributor = Some party, status = "InTransit", temperature=34.0, humidity=55.6, currentLocation="newLocation"
+    
+
+    choice ShipToRetailer : ContractId TomatoBatch
+      with
+        party: Party
+      controller distributor
+      do create this with retailer = Some party, status = "InTransitToRetailer"
+
+    choice ReceiveByRetailer : ContractId TomatoBatch
+      with
+        party: Party
+      controller retailer
+      do create this with retailer = Some party, status = "ReceivedByRetailer"
+
+    choice SellTomatoeBatch : ContractId TomatoBatch
+      with
+        party: Party
+      controller retailer
+      do
+        -- Perform any validation or checks required for the purchase
+        assertMsg "Tomatoes are not available to sell" (status == "ReceivedByRetailer")
+        -- Update the status to reflect the purchase
+        do create this with consumer = Some party, status = "ReadyToSell"
+
+    choice PurchaseTomatoeBatch : ContractId TomatoBatch
+      with
+        party: Party
+      controller consumer
+      do
+        -- Perform any validation or checks required for the purchase
+        assertMsg "Tomatoes are not available for purchase" (status == "ReadyToSell")
+        -- Update the status to reflect the purchase
+        do create this with consumer = Some party, status = "PurchasedByConsumer"
+
+setup : Script ()
+setup = script do
+  farmer <- allocateParty "Quinta"
+  distributor <- allocateParty "Distribuidor"
+  retailer <- allocateParty "Retailer"
+  consumer <- allocateParty "Consumer"
+  -- Create a tomato batch
+  tomatoBatch <- submit farmer do
+    createCmd TomatoBatch with
+      batchId = "Lote_001"
+      farmer = farmer
+      distributor = None
+      retailer = None
+      consumer = None
+      variety = "Tomate Cereja"
+      quantity = 100
+      weight = 1.8
+      plantingDate = date 2024 Jan 5
+      harvestDate = date 2024 May 3
+      harvestLocation = "Quinta A"
+      currentLocation = "Quinta A"
+      certification = "Orgânico"
+      temperature = 25.0
+      humidity = 60.0
+      hasFertilizer = False
+      status = "Harvested"
+
+  -- start process TomateBatch
+  createTomatoBatch <- submit farmer do
+    exerciseCmd tomatoBatch Create with party = farmer
+
+  -- shipping process to distributor
+  tomatoBatchTransit <- submit farmer do
+    exerciseCmd createTomatoBatch ShipToDistributor with party = distributor
+
+  -- receiving process by distributor
+  tomatoBatchReceivedByDistributor <- submit distributor do
+    exerciseCmd tomatoBatchTransit ReceiveByDistributor with party = distributor
+
+  -- in Transit Location Update
+  tomatoBatchLocationUpdate <- submit distributor do
+    exerciseCmd tomatoBatchReceivedByDistributor LocationUpdate with party = distributor
+
+  -- shipping process to retailer
+  tomatoBatchTransitToRetailer <- submit distributor do
+    exerciseCmd tomatoBatchLocationUpdate ShipToRetailer with party = retailer
+
+  -- receiving process by retailer
+  tomatoBatchReceivedByRetailer <- submit retailer do
+    exerciseCmd tomatoBatchTransitToRetailer ReceiveByRetailer with party = retailer
+
+  -- Batch of Tomateo ready to Sell
+  readyToBuyTomatoeBatch <- submit retailer do
+    exerciseCmd tomatoBatchReceivedByRetailer SellTomatoeBatch with party = consumer
+
+  -- consumer purchase the Tomatoe Batch
+  purchaseTomatoeBatch <- submit consumer do
+    exerciseCmd readyToBuyTomatoeBatch PurchaseTomatoeBatch with party = consumer
+
+  return ()
+
