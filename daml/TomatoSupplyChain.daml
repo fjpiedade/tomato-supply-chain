@@ -5,7 +5,7 @@ import DA.Date
 -- import DA.Time
 
 type TomatoBatchCID = ContractId TomatoBatch -- Asset
--- Definição do contrato para representar um lote de tomates
+-- Definition of the contract to represent a batch of tomatoes
 template TomatoBatch
   with
     batchId: Text
@@ -48,7 +48,10 @@ template TomatoBatch
       with
         party: Party
       controller farmer
-      do create this with distributor = Some party, status = "ReceivedByDistributor"
+      do
+        -- currentTime <- getTime
+        -- let nowDate = toDateUTC currentTime 
+        create this with distributor = Some party, status = "ReceivedByDistributor"
 
     choice ReceiveByDistributor : ContractId TomatoBatch
       with
@@ -94,6 +97,22 @@ template TomatoBatch
         assertMsg "Tomatoes are not available for purchase" (status == "ReadyToSell")
         -- Update the status to reflect the purchase
         do create this with consumer = Some party, status = "PurchasedByConsumer"
+
+    choice ReturnToFarmer : ContractId TomatoBatch
+      with
+        party: Party
+      controller distributor
+      do
+        assertMsg "Batch cannot be returned to farmer if it's not received by distributor" (status == "ReceivedByDistributor")
+        create this with farmer = farmer, status = "ReturnedToFarmer"
+
+    choice DenyTomatoBatch : ContractId TomatoBatch
+      with
+        party: Party
+      controller retailer
+      do
+        assertMsg "Batch must be received by retailer to be denied" (status == "ReceivedByRetailer")
+        create this with distributor = Some party, status = "DeniedByRetailer"
 
 setup : Script ()
 setup = script do
@@ -153,6 +172,15 @@ setup = script do
   -- consumer purchase the Tomatoe Batch
   purchaseTomatoeBatch <- submit consumer do
     exerciseCmd readyToBuyTomatoeBatch PurchaseTomatoeBatch with party = consumer
+
+    -- Returning the batch to the farmer
+  -- returnToFarmer <- submit distributor do
+  --   exerciseCmd tomatoBatchReceivedByDistributor ReturnToFarmer with party = farmer
+
+  -- Denying the batch by the retailer
+  -- denyTomatoBatch <- submit retailer do
+  --   exerciseCmd tomatoBatchReceivedByRetailer DenyTomatoBatch with party = distributor
+
 
   return ()
 
