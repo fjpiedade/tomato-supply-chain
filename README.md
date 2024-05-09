@@ -10,6 +10,9 @@ Implementation of a Traceability system for the entire process from tomato produ
 
 - **TomatoBatch** -> _All information about the tomato batch and all Parties._
 
+  ![Screenshot 2024-05-08 at 1 35 07 PM](https://github.com/fjpiedade/tomato-supply-chain/assets/82730685/edf2dff1-7ea6-45a0-bdf3-10f1344e81ab)
+
+
 ### Choices
 
 - **Harvested** -> _When harvested by the producer, initial state;_
@@ -35,6 +38,9 @@ Implementation of a Traceability system for the entire process from tomato produ
 ### How to Run
 
 Execute setup script
+
+![Screenshot 2024-05-09 at 1 20 12 AM](https://github.com/fjpiedade/tomato-supply-chain/assets/82730685/d4412494-fe1f-4716-b5c8-139394622d13)
+
 
 ### Result
 
