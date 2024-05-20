@@ -42,6 +42,9 @@ template TomatoBatch
         assertMsg "Harvest date must be after planting date" (plantingDate < harvestDate)
         let threeMonthsFromPlanting = addDays plantingDate 90 -- Adding 90 days to plantingDate
         assertMsg "Difference between planting and harvest dates must be more than 3 months" (harvestDate > threeMonthsFromPlanting) 
+        -- validate weather
+        assertMsg "The temperature must be correct" (temperature > 0.0 || temperature < 40.0)
+        assertMsg "The humidity must be between 50% and 70%" (humidity > 50.0 || humidity < 70.0)
         create this with status = "Packed"
 
     choice ShipToDistributor : ContractId TomatoBatch
@@ -63,7 +66,10 @@ template TomatoBatch
       with
         party: Party
       controller distributor
-      do create this with distributor = Some party, status = "InTransit", temperature=34.0, humidity=55.6, currentLocation="newLocation"
+      do 
+        assertMsg "The temperature must be correct" (temperature > 0.0 || temperature < 40.0)
+        assertMsg "The humidity must be between 50% and 70%" (humidity > 50.0 || humidity < 70.0)
+        create this with distributor = Some party, status = "InTransit", temperature=34.0, humidity=55.6, currentLocation="newLocation"
     
 
     choice ShipToRetailer : ContractId TomatoBatch
