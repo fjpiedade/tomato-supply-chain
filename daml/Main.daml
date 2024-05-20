@@ -1,4 +1,4 @@
-module TomatoSupplyChain where
+module Main where
 
 import Daml.Script
 import DA.Date
@@ -53,8 +53,6 @@ template TomatoBatch
         party: Party
       controller farmer
       do
-        -- currentTime <- getTime
-        -- let nowDate = toDateUTC currentTime 
         create this with distributor = Some party, status = "ReceivedByDistributor"
 
     choice ReceiveByDistributor : ContractId TomatoBatch
@@ -93,7 +91,7 @@ template TomatoBatch
         -- Perform any validation or checks required for the purchase
         assertMsg "Tomatoes are not available to sell" (status == "ReceivedByRetailer")
         -- Update the status to reflect the purchase
-        do create this with consumer = Some party, status = "ReadyToSell"
+        do create this with consumer = Some party, status = "ReadyToSell", price = 2.5
 
     choice PurchaseTomatoeBatch : ContractId TomatoBatch
       with
@@ -102,8 +100,13 @@ template TomatoBatch
       do
         -- Perform any validation or checks required for the purchase
         assertMsg "Tomatoes are not available for purchase" (status == "ReadyToSell")
+        -- Validate the data for consumer
+        currentTime <- getTime
+        let nowDate = toDateUTC currentTime
+        let sevenDaysAfterHarvest = addDays harvestDate 6 -- Adding 90 days to plantingDate
+        -- assertMsg "Out of the date for consume" (nowDate > sevenDayAfterHarvest) 
         -- Update the status to reflect the purchase
-        do create this with consumer = Some party, status = "PurchasedByConsumer", price = 2.5
+        do create this with consumer = Some party, status = "PurchasedByConsumer"
 
     choice ReturnToFarmer : ContractId TomatoBatch
       with
@@ -127,6 +130,10 @@ setup = script do
   distributor <- allocateParty "Distribuidor"
   retailer <- allocateParty "Retailer"
   consumer <- allocateParty "Consumer"
+  -- users
+  systemUser <- validateUserId("fjpiedade")
+  createUser (User systemUser(Some farmer)) [CanActAs farmer]
+  
   -- Create a tomato batch
   tomatoBatch <- submit farmer do
     createCmd TomatoBatch with
