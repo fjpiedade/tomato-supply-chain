@@ -24,6 +24,7 @@ template TomatoBatch
     temperature: Decimal
     humidity: Decimal
     hasFertilizer: Bool
+    price: Decimal
     status: Text
   where
     signatory farmer
@@ -102,7 +103,7 @@ template TomatoBatch
         -- Perform any validation or checks required for the purchase
         assertMsg "Tomatoes are not available for purchase" (status == "ReadyToSell")
         -- Update the status to reflect the purchase
-        do create this with consumer = Some party, status = "PurchasedByConsumer"
+        do create this with consumer = Some party, status = "PurchasedByConsumer", price = 2.5
 
     choice ReturnToFarmer : ContractId TomatoBatch
       with
@@ -145,6 +146,7 @@ setup = script do
       temperature = 25.0
       humidity = 60.0
       hasFertilizer = False
+      price = 0.0
       status = "Harvested"
 
   -- start process TomateBatch
