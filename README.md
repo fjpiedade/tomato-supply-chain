@@ -8,10 +8,34 @@ Implementation of a Traceability system for the entire process from tomato produ
 
 ### Contract
 
-- **TomatoBatch** -> _All information about the tomato batch and all Parties._
+- **TomatoBatch** -> _all Parties and All information about the tomato batch._
 
-![Screenshot 2024-05-20 at 7 56 36 AM](https://github.com/fjpiedade/tomato-supply-chain/assets/82730685/4b0435b2-8b3e-4539-94bb-d93d87565ac8)
+  <!-- ![Screenshot 2024-05-08 at 1 35 07 PM](https://github.com/fjpiedade/tomato-supply-chain/assets/82730685/edf2dff1-7ea6-45a0-bdf3-10f1344e81ab) -->
 
+```daml
+type TomatoBatchCID = ContractId TomatoBatch -- Asset
+-- Definition of the contract to represent a batch of tomatoes
+template TomatoBatch
+  with
+    batchId: Text
+    farmer: Party
+    distributor: Optional Party
+    retailer: Optional Party
+    consumer: Optional Party
+    variety: Text
+    quantity: Int
+    weight: Decimal
+    plantingDate: Date
+    harvestDate: Date
+    harvestLocation: Text
+    currentLocation: Text
+    certification: Text
+    temperature: Decimal
+    humidity: Decimal
+    hasFertilizer: Bool
+    price: Decimal
+    status: Text
+```
 
 ### Choices
 
@@ -40,7 +64,6 @@ Implementation of a Traceability system for the entire process from tomato produ
 Execute setup script
 
 ![Screenshot 2024-05-09 at 1 20 12 AM](https://github.com/fjpiedade/tomato-supply-chain/assets/82730685/d4412494-fe1f-4716-b5c8-139394622d13)
-
 
 ### Result
 

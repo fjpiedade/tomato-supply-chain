@@ -103,7 +103,7 @@ template TomatoBatch
         -- Validate the data for consumer
         currentTime <- getTime
         let nowDate = toDateUTC currentTime
-        let sevenDaysAfterHarvest = addDays harvestDate 6 -- Adding 90 days to plantingDate
+        let sevenDaysAfterHarvest = addDays harvestDate 6 -- Adding 6 days to plantingDate
         -- assertMsg "Out of the date for consume" (nowDate > sevenDayAfterHarvest) 
         -- Update the status to reflect the purchase
         do create this with consumer = Some party, status = "PurchasedByConsumer"
